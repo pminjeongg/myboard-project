@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>일상 공유 게시판</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+<h1>일상 공유 게시판</h1>
+<span class="title-underline"></span>
+<div class="menu">
+    <button onclick="showBox('writeBox')">글쓰기</button>
+    <button onclick="showBox('listBox'); loadList();">목록보기</button>
+    <a href="/home" class="menu-home">← 홈으로</a>
+</div>
+
+<!-- 글쓰기 -->
+<div id="writeBox" class="box">
+    <div class="write-intro">오늘 있었던 일, 편하게 적어보세요 ✍️</div>
+    <form action="/post" method="POST" class="write-form">
+        <div class="field">
+            <label for="title">제목</label>
+            <input id="title" name="title" placeholder="오늘 하루를 한 줄로 표현하면?" required>
+        </div>
+        <div class="field">
+            <label for="writer">작성자</label>
+            <input id="writer" name="writer" placeholder="닉네임을 입력해주세요" required>
+        </div>
+        <div class="field">
+            <label for="content">내용</label>
+            <textarea id="content" name="content" placeholder="자유롭게 이야기를 풀어주세요. 소소한 일상도 좋아요."></textarea>
+        </div>
+        <div class="write-actions">
+            <button type="button" class="btn-cancel" onclick="cancelWrite()">취소</button>
+            <button type="submit" class="btn-submit">등록하기</button>
+        </div>
+    </form>
+</div>
+
+<!-- 목록, 검색 -->
+<div id="listBox" class="box">
+    <div class="search-row">
+        <input id="keyword" placeholder="제목, 작성자, 내용으로 검색">
+        <button onclick="search()">🔍</button>
+        <button class="search-reset" onclick="loadList()">전체보기</button>
+    </div>
+    <div id="listArea"></div>
+</div>
+
+<script>
+let currentMode = 'list';
+let currentKeyword = '';
+
+function showBox(id){
+    let boxes = document.getElementsByClassName('box');
+    for(let i=0; i<boxes.length; i++){
+        boxes[i].style.display = 'none';
+    }
+    document.getElementById(id).style.display = 'block';
+}
+
+function loadList(page){
+    page = page || 1;
+    currentMode = 'list';
+    fetch('/list?page=' + page)
+    .then(function(res){ return res.text(); })
+    .then(function(html){
+        document.getElementById('listArea').innerHTML = html;
+    })
+    .catch(function(err){ console.log(err); });
+}
+
+function search(page){
+    page = page || 1;
+    currentMode = 'search';
+    currentKeyword = document.getElementById('keyword').value;
+    fetch('/search?keyword=' + encodeURIComponent(currentKeyword) + '&page=' + page)
+    .then(function(res){ return res.text(); })
+    .then(function(html){
+        document.getElementById('listArea').innerHTML = html;
+    })
+    .catch(function(err){ console.log(err); });
+}
+
+// 페이지 번호 버튼 클릭 시 현재 모드(목록/검색)에 맞게 다시 불러오기
+function goToPage(page){
+    if(currentMode === 'search'){
+        search(page);
+    } else {
+        loadList(page);
+    }
+}
+
+// 글쓰기 취소 -> 폼 초기화하고 목록으로 이동
+function cancelWrite(){
+    document.querySelector('#writeBox form').reset();
+    showBox('listBox');
+    loadList();
+}
+
+// 제목 줄 클릭하면 내용 펼치기/접기
+function toggleContent(summary){
+    summary.nextElementSibling.classList.toggle('open');
+}
+
+// 삭제
+function deletePost(btn, id){
+    fetch('/post/' + id, { method: 'DELETE' })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+        if(data.success){
+            goToPage(currentMode === 'search' ? 1 : 1); // 삭제 후 1페이지부터 다시 불러오기
+        } else {
+            alert('삭제에 실패했습니다.');
+        }
+    })
+    .catch(function(err){ console.log(err); });
+}
+
+window.onload = function() {
+    let params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'list') {
+        showBox('listBox');
+        loadList();
+    }
+};
+</script>
+</body>
+</html>

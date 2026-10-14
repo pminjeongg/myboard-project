@@ -1,0 +1,14 @@
+{
+  "name": "board-app",
+  "version": "1.0.0",
+  "description": "간단한 게시판 (Express)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.7",
+    "express": "^4.22.2",
+    "mongoose": "^9.8.0"
+  }
+}
